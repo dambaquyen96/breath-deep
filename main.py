@@ -15,10 +15,10 @@ config.gpu_options.allow_growth = True
 set_session(tf.Session(config=config))
 
 BATCH_SIZE = 32
-N_CLASSES = 10
-LR = 0.001
+N_CLASSES = 4
+LR = 0.0005
 N_EPOCHS = 50
-INPUT_SIZE = (128, 431, 1)
+INPUT_SIZE = (40, 216, 1)
 
 
 train_generator = BreathDataGenerator(
@@ -43,10 +43,12 @@ from keras.applications.mobilenet import MobileNet
 from keras.layers import Dropout, Flatten, Dense, GlobalAveragePooling2D
 from keras.models import Sequential, Model 
 from resnet import ResnetBuilder
+from model import SimpleCNN
 
 # model = MobileNet(input_shape=(INPUT_SIZE[0], INPUT_SIZE[1], 1), include_top=True, classes=N_CLASSES, weights=None)
 # model = MobileNetV2(input_shape=(INPUT_SIZE[0], INPUT_SIZE[1], 1), include_top=True, classes=N_CLASSES, weights=None)
-model = ResnetBuilder.build_resnet_18(input_shape=INPUT_SIZE, num_outputs=N_CLASSES)
+# model = ResnetBuilder.build_resnet_18(input_shape=INPUT_SIZE, num_outputs=N_CLASSES)
+model = SimpleCNN.build(input_shape=INPUT_SIZE, classes=N_CLASSES)
 model.summary()
 
 # Training
@@ -59,7 +61,7 @@ checkpoint = ModelCheckpoint(model_file, monitor='val_loss', verbose=1, save_bes
 tbCallBack = keras.callbacks.TensorBoard(log_dir='logs/tensorboard', write_graph=True, write_images=True)
 
 callbacks_list = [checkpoint, tbCallBack]
-# model.load_weights("models/weights-improvement-16-0.05.hdf5")
+#model.load_weights("models/weights-improvement-00-1.08.hdf5")
 model.compile(loss=keras.losses.sparse_categorical_crossentropy,
               optimizer=Adadelta(),
               metrics=['accuracy'])
