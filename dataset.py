@@ -7,10 +7,10 @@ import os
 class BreathDataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
     def __init__(self, directory, 
-                    list_labels=['light', 'normal', 'deep', 'rush'], 
+                    list_labels=['normal', 'deep', 'rush'], 
                     batch_size=32,
                     dim=None,
-                    n_classes=10, 
+                    classes=None, 
                     shuffle=True):
         'Initialization'
         self.directory = directory
@@ -18,7 +18,7 @@ class BreathDataGenerator(keras.utils.Sequence):
         self.dim = dim
         self.__flow_from_directory(self.directory)
         self.batch_size = batch_size
-        self.n_classes = len(self.list_labels)
+        self.classes = len(self.list_labels)
         self.shuffle = shuffle
         self.on_epoch_end()
 
@@ -68,8 +68,11 @@ class BreathDataGenerator(keras.utils.Sequence):
             rate, data = wavfile.read(list_wav[i])
             data = np.array(data, dtype=np.float32)
             data *= 1./32768
-            feature = librosa.feature.melspectrogram(y=data, sr=rate, n_fft=2048, hop_length=512, power=2.0)
-            # print(feature.shape)
+#             feature = librosa.feature.melspectrogram(y=data, sr=rate, n_fft=2048, hop_length=512, power=2.0)
+            feature = librosa.feature.mfcc(y=data, sr=rate, 
+                                           n_mfcc=40, fmin=0, fmax=8000,
+                                           n_fft=2048, hop_length=1024, power=2.0)
+#             print(feature.shape)
             feature = np.reshape(feature, self.dim)
             X.append(feature)
             Y.append(list_label[i])
