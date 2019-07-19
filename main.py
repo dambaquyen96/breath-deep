@@ -16,15 +16,15 @@ config.gpu_options.allow_growth = True
 set_session(tf.Session(config=config))
 
 BATCH_SIZE = 32
-LIST_LABELS = ['normal', 'deep', 'rush']
+LIST_LABELS = ['normal', 'deep', 'strong']
 N_CLASSES = len(LIST_LABELS)
-LR = 0.0005
-N_EPOCHS = 5
-INPUT_SIZE = (40, 216, 1)
+LR = 3
+N_EPOCHS = 30
+INPUT_SIZE = (40, 126, 1)
 
 
 train_generator = BreathDataGenerator(
-        'dataset/training_dataset',
+        'data/training',
         list_labels=LIST_LABELS,
         batch_size=BATCH_SIZE,
         dim=INPUT_SIZE,
@@ -34,7 +34,7 @@ N_TRAIN_SAMPLES = len(train_generator.wavs)
 print("Train samples: {}".format(N_TRAIN_SAMPLES))
 # exit(1)
 validation_generator = BreathDataGenerator(
-        'dataset/testing_dataset',
+        'data/testing',
         list_labels=LIST_LABELS,
         batch_size=BATCH_SIZE,
         dim=INPUT_SIZE,
@@ -44,6 +44,7 @@ print("Validation samples: {}".format(N_VALID_SAMPLES))
 
 # import keras.applications
 from keras.applications.mobilenet import MobileNet
+from keras.applications.mobilenet_v2 import MobileNetV2
 from keras.layers import Dropout, Flatten, Dense, GlobalAveragePooling2D
 from keras.models import Sequential, Model 
 from resnet import ResnetBuilder
@@ -51,8 +52,8 @@ from model import SimpleCNN
 
 # model = MobileNet(input_shape=(INPUT_SIZE[0], INPUT_SIZE[1], 1), include_top=True, classes=N_CLASSES, weights=None)
 # model = MobileNetV2(input_shape=(INPUT_SIZE[0], INPUT_SIZE[1], 1), include_top=True, classes=N_CLASSES, weights=None)
-# model = ResnetBuilder.build_resnet_18(input_shape=INPUT_SIZE, num_outputs=N_CLASSES)
-model = SimpleCNN.build(input_shape=INPUT_SIZE, classes=N_CLASSES)
+model = ResnetBuilder.build_resnet_18(input_shape=INPUT_SIZE, num_outputs=N_CLASSES)
+# model = SimpleCNN.build(input_shape=INPUT_SIZE, classes=N_CLASSES)
 model.summary()
 
 # Training
@@ -70,34 +71,43 @@ model.compile(loss=keras.losses.sparse_categorical_crossentropy,
               optimizer=Adadelta(),
               metrics=['accuracy'])
 
-model.fit_generator(
-        train_generator,
-        steps_per_epoch=N_TRAIN_SAMPLES // BATCH_SIZE,
-        initial_epoch=0,
-        epochs=N_EPOCHS,
-        validation_data=validation_generator,
-        validation_steps=N_VALID_SAMPLES // BATCH_SIZE,
-        callbacks=callbacks_list,
-        max_queue_size=6,
-        workers=3,
-        use_multiprocessing=True,
+mode = 'TRAIN'
+# mode = 'TEST'
+
+if mode == 'TRAIN':
+        model.fit_generator(
+                train_generator,
+                steps_per_epoch=N_TRAIN_SAMPLES // BATCH_SIZE,
+                initial_epoch=0,
+                epochs=N_EPOCHS,
+                validation_data=validation_generator,
+                validation_steps=N_VALID_SAMPLES // BATCH_SIZE,
+                callbacks=callbacks_list,
+                max_queue_size=6,
+                workers=3,
+                use_multiprocessing=True,
         )
 
-test_generator = BreathDataGenerator(
-        'dataset/testing_dataset',
-        list_labels=LIST_LABELS,
-        batch_size=1,
-        dim=INPUT_SIZE,
-        shuffle=False)
-N_TEST_SAMPLES = len(test_generator.wavs)
-print("Test samples: {}".format(N_TEST_SAMPLES))
-#Confution Matrix and Classification Report
-Y_pred = model.predict_generator(test_generator, N_TEST_SAMPLES)
-y_pred = np.argmax(Y_pred, axis=1)
-print('Confusion Matrix')
-print(confusion_matrix(test_generator.labels, y_pred))
-print('Classification Report')
-print(classification_report(test_generator.labels, y_pred, target_names=LIST_LABELS))
+else:
+        best_model_path = "models/weights-improvement-25-0.61.hdf5"
+
+        model.load_weights(best_model_path)
+
+        test_generator = BreathDataGenerator(
+                'data/testing',
+                list_labels=LIST_LABELS,
+                batch_size=1,
+                dim=INPUT_SIZE,
+                shuffle=False)
+        N_TEST_SAMPLES = len(test_generator.wavs)
+        print("Test samples: {}".format(N_TEST_SAMPLES))
+        #Confution Matrix and Classification Report
+        Y_pred = model.predict_generator(test_generator, N_TEST_SAMPLES)
+        y_pred = np.argmax(Y_pred, axis=1)
+        print('Confusion Matrix')
+        print(confusion_matrix(test_generator.labels, y_pred))
+        print('Classification Report')
+        print(classification_report(test_generator.labels, y_pred, target_names=LIST_LABELS))
 
 
 

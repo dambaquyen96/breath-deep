@@ -68,11 +68,11 @@ class BreathDataGenerator(keras.utils.Sequence):
             rate, data = wavfile.read(list_wav[i])
             data = np.array(data, dtype=np.float32)
             data *= 1./32768
-#             feature = librosa.feature.melspectrogram(y=data, sr=rate, n_fft=2048, hop_length=512, power=2.0)
+            # feature = librosa.feature.melspectrogram(y=data, sr=rate, n_fft=2048, hop_length=512, power=2.0)
             feature = librosa.feature.mfcc(y=data, sr=rate, 
                                            n_mfcc=40, fmin=0, fmax=8000,
-                                           n_fft=2048, hop_length=1024, power=2.0)
-#             print(feature.shape)
+                                           n_fft=int(16*64), hop_length=int(16*32), power=2.0)
+            # print(feature.shape)
             feature = np.reshape(feature, self.dim)
             X.append(feature)
             Y.append(list_label[i])
